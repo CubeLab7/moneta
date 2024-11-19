@@ -69,6 +69,12 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*I
 		},
 	}
 
+	if len(request.Attributes) > 0 {
+		for _, attribute := range request.Attributes {
+			reqData.Body.InvoiceRequest.OperationInfo.Attributes = append(reqData.Body.InvoiceRequest.OperationInfo.Attributes, attribute)
+		}
+	}
+
 	body := new(bytes.Buffer)
 	if err = json.NewEncoder(body).Encode(reqData); err != nil {
 		return nil, nil, fmt.Errorf("can't encode request: %s", err)

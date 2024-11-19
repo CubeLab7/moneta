@@ -113,4 +113,5 @@ type CreateDynamicQRInvoiceReq struct {
 	Amount        string `json:"amount"`
 	TransactionId string `json:"transaction_id"`
 	Description   string `json:"description"`
+	Attributes    []Attribute
 }
