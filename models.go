@@ -115,3 +115,10 @@ type CreateDynamicQRInvoiceReq struct {
 	Description   string `json:"description"`
 	Attributes    []Attribute
 }
+
+type CreateDynamicQRInvoiceResp struct {
+	OrderID    int
+	Status     string `json:"status"`
+	Attributes map[string]interface{}
+	Error      Error `json:"error"`
+}

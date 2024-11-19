@@ -24,7 +24,7 @@ func New(config *Config) *Service {
 	}
 }
 
-func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*InvoiceResponse, []byte, error) {
+func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*CreateDynamicQRInvoiceResp, []byte, error) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -93,8 +93,10 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*I
 		return nil, respBody, fmt.Errorf("sendRequest: %w", err)
 	}
 
+	response := new(CreateDynamicQRInvoiceResp)
+
 	if inputs.HttpCode != http.StatusOK {
-		resp.Envelope.Body.InvoiceResponse.Error = Error{
+		response.Error = Error{
 			HasError: true,
 			Code:     resp.Envelope.Body.Fault.FaultCode,
 			Message:  resp.Envelope.Body.Fault.FaultStr,
@@ -102,13 +104,21 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*I
 		}
 	}
 
-	return &resp.Envelope.Body.InvoiceResponse, respBody, nil
+	response.Attributes = make(map[string]interface{})
+	for _, attribute := range resp.Envelope.Body.InvoiceResponse.OperationInfo.Attributes {
+		response.Attributes[attribute.Key] = attribute.Value
+	}
+
+	response.Status = resp.Envelope.Body.InvoiceResponse.Status
+	response.OrderID = resp.Envelope.Body.InvoiceResponse.Transaction
+
+	return response, respBody, nil
 }
 
 func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("robokassa! SendRequest: %v", err)
+			err = fmt.Errorf("moneta! SendRequest: %v", err)
 		}
 	}()
 
