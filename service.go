@@ -104,7 +104,7 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*C
 		}
 	}
 
-	response.Attributes = make(map[string]interface{})
+	response.Attributes = make(map[string]string)
 	for _, attribute := range resp.Envelope.Body.InvoiceResponse.OperationInfo.Attributes {
 		response.Attributes[attribute.Key] = attribute.Value
 	}
