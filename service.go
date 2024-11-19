@@ -2,6 +2,8 @@ package moneta
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -174,4 +176,33 @@ func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error
 	}
 
 	return
+}
+
+type SignatureData struct {
+	MntID             string
+	MntTransactionID  string
+	MntOperationID    string
+	MntAmount         string
+	MntCurrencyCode   string
+	MntSubscriberID   string
+	MntTestMode       string
+	ReceivedSignature string
+}
+
+func (s *Service) VerifySignature(data SignatureData) bool {
+	signatureString := fmt.Sprintf("%s%s%s%s%s%s%s%s",
+		data.MntID,
+		data.MntTransactionID,
+		data.MntOperationID,
+		data.MntAmount,
+		data.MntCurrencyCode,
+		data.MntSubscriberID,
+		data.MntTestMode,
+		s.config.SignatureVerificationCode,
+	)
+
+	hash := md5.Sum([]byte(signatureString))
+	calculatedSignature := hex.EncodeToString(hash[:])
+
+	return calculatedSignature == data.ReceivedSignature
 }

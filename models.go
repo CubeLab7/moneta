@@ -5,14 +5,15 @@ import (
 )
 
 type Config struct {
-	IdleConnTimeoutSec int
-	RequestTimeoutSec  int
-	Username           string
-	Password           string
-	Url                string
-	Payee              string
-	SbpPayer           string
-	Version            string
+	IdleConnTimeoutSec        int
+	RequestTimeoutSec         int
+	SignatureVerificationCode string
+	Username                  string
+	Password                  string
+	Url                       string
+	Payee                     string
+	SbpPayer                  string
+	Version                   string
 }
 
 type SendParams struct {
