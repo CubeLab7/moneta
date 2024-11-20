@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -193,6 +194,9 @@ func (s *Service) VerifySignature(data SignatureData) bool {
 	hash := md5.Sum([]byte(signatureString))
 	calculatedSignature := hex.EncodeToString(hash[:])
 
+	log.Println("received: ", data.ReceivedSignature)
+	log.Println("calculated: ", calculatedSignature)
+
 	return calculatedSignature == data.ReceivedSignature
 }
 
@@ -208,6 +212,9 @@ func (s *Service) VerifySignatureOfNotification(data SignatureNotificationData) 
 
 	hash := md5.Sum([]byte(signatureString))
 	calculatedSignature := hex.EncodeToString(hash[:])
+
+	log.Println("received: ", data.ReceivedSignature)
+	log.Println("calculated: ", calculatedSignature)
 
 	return calculatedSignature == data.ReceivedSignature
 }
