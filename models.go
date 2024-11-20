@@ -123,3 +123,23 @@ type CreateDynamicQRInvoiceResp struct {
 	Attributes map[string]string
 	Error      Error `json:"error"`
 }
+
+type SignatureData struct {
+	MntID             string
+	MntTransactionID  string
+	MntOperationID    string
+	MntAmount         string
+	MntCurrencyCode   string
+	MntSubscriberID   string
+	MntTestMode       string
+	ReceivedSignature string
+}
+
+type SignatureNotificationData struct {
+	Notification      string
+	AccountID         string
+	PaymentToken      string
+	OperationID       string
+	TransactionID     string
+	ReceivedSignature string
+}

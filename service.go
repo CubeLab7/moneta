@@ -178,17 +178,6 @@ func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error
 	return
 }
 
-type SignatureData struct {
-	MntID             string
-	MntTransactionID  string
-	MntOperationID    string
-	MntAmount         string
-	MntCurrencyCode   string
-	MntSubscriberID   string
-	MntTestMode       string
-	ReceivedSignature string
-}
-
 func (s *Service) VerifySignature(data SignatureData) bool {
 	signatureString := fmt.Sprintf("%s%s%s%s%s%s%s%s",
 		data.MntID,
@@ -198,6 +187,22 @@ func (s *Service) VerifySignature(data SignatureData) bool {
 		data.MntCurrencyCode,
 		data.MntSubscriberID,
 		data.MntTestMode,
+		s.config.SignatureVerificationCode,
+	)
+
+	hash := md5.Sum([]byte(signatureString))
+	calculatedSignature := hex.EncodeToString(hash[:])
+
+	return calculatedSignature == data.ReceivedSignature
+}
+
+func (s *Service) VerifySignatureOfNotification(data SignatureNotificationData) bool {
+	signatureString := fmt.Sprintf("%s%s%s%s%s%s",
+		data.Notification,
+		data.AccountID,
+		data.PaymentToken,
+		data.OperationID,
+		data.TransactionID,
 		s.config.SignatureVerificationCode,
 	)
 
