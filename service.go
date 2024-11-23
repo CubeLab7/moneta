@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -179,42 +180,15 @@ func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error
 	return
 }
 
-func (s *Service) VerifySignature(data SignatureData) bool {
-	signatureString := fmt.Sprintf("%s%s%s%s%s%s%s%s",
-		data.MntID,
-		data.MntTransactionID,
-		data.MntOperationID,
-		data.MntAmount,
-		data.MntCurrencyCode,
-		data.MntSubscriberID,
-		data.MntTestMode,
-		s.config.SignatureVerificationCode,
-	)
+func (s *Service) VerifySignature(fields []string, receivedSignature string) bool {
+	signatureString := strings.Join(fields, "")
+	signatureString += s.config.SignatureVerificationCode
 
 	hash := md5.Sum([]byte(signatureString))
 	calculatedSignature := hex.EncodeToString(hash[:])
 
-	log.Println("received: ", data.ReceivedSignature)
-	log.Println("calculated: ", calculatedSignature)
+	log.Println("Calculated signature: ", calculatedSignature)
+	log.Println("Received signature: ", receivedSignature)
 
-	return calculatedSignature == data.ReceivedSignature
-}
-
-func (s *Service) VerifySignatureOfNotification(data SignatureNotificationData) bool {
-	signatureString := fmt.Sprintf("%s%s%s%s%s%s",
-		data.Notification,
-		data.AccountID,
-		data.PaymentToken,
-		data.OperationID,
-		data.TransactionID,
-		s.config.SignatureVerificationCode,
-	)
-
-	hash := md5.Sum([]byte(signatureString))
-	calculatedSignature := hex.EncodeToString(hash[:])
-
-	log.Println("received: ", data.ReceivedSignature)
-	log.Println("calculated: ", calculatedSignature)
-
-	return calculatedSignature == data.ReceivedSignature
+	return calculatedSignature == receivedSignature
 }
