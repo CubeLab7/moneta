@@ -108,7 +108,7 @@ func (s *Service) QrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, erro
 	}
 
 	response.Status = resp.Envelope.Body.InvoiceResponse.Status
-	response.OrderID = resp.Envelope.Body.InvoiceResponse.Transaction
+	response.OrderID = resp.Envelope.Body.InvoiceResponse.OperationInfo.ID
 
 	return response, respBody, nil
 }

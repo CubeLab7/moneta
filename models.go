@@ -92,6 +92,7 @@ type Error struct {
 }
 
 type OperationInfo struct {
+	ID         int         `json:"id"`
 	Attributes []Attribute `json:"attribute"`
 }
 
