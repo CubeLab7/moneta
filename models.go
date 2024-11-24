@@ -110,14 +110,14 @@ type Detail struct {
 	FaultDetail string `json:"faultDetail"`
 }
 
-type CreateDynamicQRInvoiceReq struct {
+type QrPaymentReq struct {
 	Amount        string `json:"amount"`
 	TransactionId string `json:"transaction_id"`
 	Description   string `json:"description"`
 	Attributes    []Attribute
 }
 
-type CreateDynamicQRInvoiceResp struct {
+type QrPaymentResp struct {
 	OrderID    int
 	Status     string `json:"status"`
 	Attributes map[string]string

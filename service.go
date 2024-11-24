@@ -28,7 +28,7 @@ func New(config *Config) *Service {
 	}
 }
 
-func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*CreateDynamicQRInvoiceResp, []byte, error) {
+func (s *Service) QrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, error) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -63,12 +63,6 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*C
 					Amount:            request.Amount,
 					ClientTransaction: request.TransactionId,
 					Description:       request.Description,
-					OperationInfo: OperationInfo{
-						Attributes: []Attribute{{
-							Key:   "CUSTOMFIELD:QRTTL",
-							Value: "11",
-						}},
-					},
 				}},
 		},
 	}
@@ -97,7 +91,7 @@ func (s *Service) CreateDynamicQRInvoice(request *CreateDynamicQRInvoiceReq) (*C
 		return nil, respBody, fmt.Errorf("sendRequest: %w", err)
 	}
 
-	response := new(CreateDynamicQRInvoiceResp)
+	response := new(QrPaymentResp)
 
 	if inputs.HttpCode != http.StatusOK {
 		response.Error = Error{
