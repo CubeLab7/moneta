@@ -52,7 +52,7 @@ func (s *Service) QrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, erro
 	reqData := &Request{
 		Envelope: Envelope{
 			Header: Header{Security: Security{UsernameToken: UsernameToken{
-				Username: s.config.Username,
+				Username: s.config.Login,
 				Password: s.config.Password,
 			}}},
 			Body: Body{
@@ -176,7 +176,7 @@ func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error
 
 func (s *Service) VerifySignature(fields []string, receivedSignature string) bool {
 	signatureString := strings.Join(fields, "")
-	signatureString += s.config.SignatureVerificationCode
+	signatureString += s.config.SecretKey
 
 	hash := md5.Sum([]byte(signatureString))
 	calculatedSignature := hex.EncodeToString(hash[:])
