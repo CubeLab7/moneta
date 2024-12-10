@@ -32,21 +32,14 @@ func (s *Service) QrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, erro
 	var err error
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("CreateDynamicQRInvoiceReq: %w", err)
+			err = fmt.Errorf("QrPayment: %w", err)
 		}
 	}()
 
 	// validation
-	if request == nil {
-		return nil, nil, fmt.Errorf("validation! request struct is nil")
-	}
-
-	if request.Amount == "" {
-		return nil, nil, fmt.Errorf("validation! amount is empty")
-	}
-
-	if request.TransactionId == "" {
-		return nil, nil, fmt.Errorf("validation! transaction len is empty")
+	err = s.validateRequest(request)
+	if err != nil {
+		return nil, nil, fmt.Errorf("validateRequest: %v", err)
 	}
 
 	reqData := &Request{
@@ -113,6 +106,113 @@ func (s *Service) QrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, erro
 	return response, respBody, nil
 }
 
+func (s *Service) MakeQrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, error) {
+	var err error
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("MakeQrPayment: %w", err)
+		}
+	}()
+
+	// validation
+	err = s.validateRequest(request)
+	if err != nil {
+		return nil, nil, fmt.Errorf("validateRequest: %v", err)
+	}
+
+	reqData := MakeQrPayment{
+		MakeQrPaymentEnvelope{
+			Header: Header{Security: Security{UsernameToken: UsernameToken{
+				Username: s.config.Login,
+				Password: s.config.Password,
+			}}},
+			Body: MakeQrPaymentBody{
+				PaymentRequest{
+					Version:           s.config.Version,
+					Payee:             s.config.Payee,
+					Payer:             s.config.SbpPayer,
+					Amount:            request.Amount,
+					ClientTransaction: request.TransactionId,
+					Description:       request.Description,
+				}},
+		},
+	}
+
+	if len(request.Attributes) > 0 {
+		for _, attribute := range request.Attributes {
+			reqData.Body.PaymentRequest.OperationInfo.Attributes = append(reqData.Body.PaymentRequest.OperationInfo.Attributes, attribute)
+		}
+	}
+
+	body := new(bytes.Buffer)
+	if err = json.NewEncoder(body).Encode(reqData); err != nil {
+		return nil, nil, fmt.Errorf("can't encode request: %s", err)
+	}
+
+	resp := new(Response)
+	inputs := SendParams{
+		Path:       createDynamicQRInvoice,
+		HttpMethod: http.MethodPost,
+		Response:   &resp,
+		Body:       body,
+	}
+
+	var respBody []byte
+	if respBody, err = sendRequest(s.config, &inputs); err != nil {
+		return nil, respBody, fmt.Errorf("sendRequest: %w", err)
+	}
+
+	response := new(QrPaymentResp)
+
+	if inputs.HttpCode != http.StatusOK {
+		response.Error = Error{
+			HasError: true,
+			Code:     resp.Envelope.Body.Fault.FaultCode,
+			Message:  resp.Envelope.Body.Fault.FaultStr,
+			Detail:   resp.Envelope.Body.Fault.Detail.FaultDetail,
+		}
+	}
+
+	response.Attributes = make(map[string]string)
+	for _, attribute := range resp.Envelope.Body.PaymentResponse.OperationInfo.Attributes {
+		response.Attributes[attribute.Key] = attribute.Value
+	}
+
+	response.Status = resp.Envelope.Body.PaymentResponse.Status
+	response.OrderID = resp.Envelope.Body.PaymentResponse.OperationInfo.ID
+
+	return response, respBody, nil
+}
+
+func (s *Service) VerifySignature(fields []string, receivedSignature string) bool {
+	signatureString := strings.Join(fields, "")
+	signatureString += s.config.SecretKey
+
+	hash := md5.Sum([]byte(signatureString))
+	calculatedSignature := hex.EncodeToString(hash[:])
+
+	log.Println("Calculated signature: ", calculatedSignature)
+	log.Println("Received signature: ", receivedSignature)
+
+	return calculatedSignature == receivedSignature
+}
+
+func (s *Service) validateRequest(request *QrPaymentReq) error {
+	if request == nil {
+		return fmt.Errorf("request struct is nil")
+	}
+
+	if request.Amount == "" {
+		return fmt.Errorf("amount is empty")
+	}
+
+	if request.TransactionId == "" {
+		return fmt.Errorf("transaction len is empty")
+	}
+
+	return nil
+}
+
 func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error) {
 	defer func() {
 		if err != nil {
@@ -172,17 +272,4 @@ func sendRequest(config *Config, inputs *SendParams) (respBody []byte, err error
 	}
 
 	return
-}
-
-func (s *Service) VerifySignature(fields []string, receivedSignature string) bool {
-	signatureString := strings.Join(fields, "")
-	signatureString += s.config.SecretKey
-
-	hash := md5.Sum([]byte(signatureString))
-	calculatedSignature := hex.EncodeToString(hash[:])
-
-	log.Println("Calculated signature: ", calculatedSignature)
-	log.Println("Received signature: ", receivedSignature)
-
-	return calculatedSignature == receivedSignature
 }

@@ -33,8 +33,9 @@ type Response struct {
 	Envelope struct {
 		Header Header `json:"Header"`
 		Body   struct {
-			InvoiceResponse InvoiceResponse `json:"InvoiceResponse,omitempty"`
-			Fault           Fault           `json:"fault,omitempty"`
+			InvoiceResponse QrPaymentResponse `json:"InvoiceResponse,omitempty"`
+			PaymentResponse QrPaymentResponse `json:"PaymentResponse,omitempty"`
+			Fault           Fault             `json:"fault,omitempty"`
 		} `json:"Body"`
 	} `json:"Envelope"`
 }
@@ -75,7 +76,7 @@ type InvoiceRequest struct {
 	OperationInfo     OperationInfo `json:"operationInfo"`
 }
 
-type InvoiceResponse struct {
+type QrPaymentResponse struct {
 	DateTime          string        `json:"dateTime"`
 	OperationInfo     OperationInfo `json:"operationInfo"`
 	ClientTransaction string        `json:"clientTransaction"`
@@ -143,4 +144,28 @@ type SignatureNotificationData struct {
 	OperationID       string
 	TransactionID     string
 	ReceivedSignature string
+}
+
+type MakeQrPayment struct {
+	MakeQrPaymentEnvelope `json:"Envelope"`
+}
+
+type MakeQrPaymentEnvelope struct {
+	Header Header            `json:"Header"`
+	Body   MakeQrPaymentBody `json:"Body"`
+}
+
+type MakeQrPaymentBody struct {
+	PaymentRequest `json:"PaymentRequest"`
+}
+
+type PaymentRequest struct {
+	Version           string        `json:"version"`
+	Payer             string        `json:"payer"`
+	Payee             string        `json:"payee"`
+	Amount            string        `json:"amount"`
+	ClientTransaction string        `json:"clientTransaction"`
+	IsPayerAmount     bool          `json:"isPayerAmount"`
+	Description       string        `json:"description"`
+	OperationInfo     OperationInfo `json:"operationInfo"`
 }
