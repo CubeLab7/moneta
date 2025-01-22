@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -180,6 +181,79 @@ func (s *Service) MakeQrPayment(request *QrPaymentReq) (*QrPaymentResp, []byte, 
 
 	response.Status = resp.Envelope.Body.PaymentResponse.Status
 	response.OrderID = resp.Envelope.Body.PaymentResponse.OperationInfo.ID
+
+	return response, respBody, nil
+}
+
+func (s *Service) GetPaymentStatusByOperationId(operationId string) (*QrPaymentResp, []byte, error) {
+	var err error
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("GetPaymentStatusByOperationId: %w", err)
+		}
+	}()
+
+	id, err := strconv.ParseInt(operationId, 10, 64)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot parse to int: %v", err)
+	}
+
+	type Request struct {
+		Envelope struct {
+			Header struct {
+				Security struct {
+					UsernameToken struct {
+						Username string `json:"Username"`
+						Password string `json:"Password"`
+					} `json:"UsernameToken"`
+				} `json:"Security"`
+			} `json:"Header"`
+			Body struct {
+				GetOperationDetailsByIdRequest int64 `json:"GetOperationDetailsByIdRequest"`
+			} `json:"Body"`
+		} `json:"Envelope"`
+	}
+
+	request := Request{}
+	request.Envelope.Header.Security.UsernameToken.Username = s.config.Login
+	request.Envelope.Header.Security.UsernameToken.Password = s.config.Password
+	request.Envelope.Body.GetOperationDetailsByIdRequest = id
+
+	body := new(bytes.Buffer)
+	if err = json.NewEncoder(body).Encode(request); err != nil {
+		return nil, nil, fmt.Errorf("can't encode request: %s", err)
+	}
+
+	resp := new(Response)
+	inputs := SendParams{
+		Path:       createDynamicQRInvoice,
+		HttpMethod: http.MethodPost,
+		Response:   &resp,
+		Body:       body,
+	}
+
+	var respBody []byte
+	if respBody, err = sendRequest(s.config, &inputs); err != nil {
+		return nil, respBody, fmt.Errorf("sendRequest: %w", err)
+	}
+
+	response := new(QrPaymentResp)
+
+	if inputs.HttpCode != http.StatusOK {
+		response.Error = Error{
+			HasError: true,
+			Code:     resp.Envelope.Body.Fault.FaultCode,
+			Message:  resp.Envelope.Body.Fault.FaultStr,
+			Detail:   resp.Envelope.Body.Fault.Detail.FaultDetail,
+		}
+
+		return response, respBody, nil
+	}
+
+	response.Attributes = make(map[string]string)
+	for _, attribute := range resp.Envelope.Body.GetOperationDetailsByIdResponse.Operation.Attributes {
+		response.Attributes[attribute.Key] = attribute.Value
+	}
 
 	return response, respBody, nil
 }

@@ -33,9 +33,10 @@ type Response struct {
 	Envelope struct {
 		Header Header `json:"Header"`
 		Body   struct {
-			InvoiceResponse QrPaymentResponse `json:"InvoiceResponse,omitempty"`
-			PaymentResponse QrPaymentResponse `json:"PaymentResponse,omitempty"`
-			Fault           Fault             `json:"fault,omitempty"`
+			InvoiceResponse                 QrPaymentResponse `json:"InvoiceResponse,omitempty"`
+			PaymentResponse                 QrPaymentResponse `json:"PaymentResponse,omitempty"`
+			GetOperationDetailsByIdResponse PaymentStatusResp `json:"GetOperationDetailsByIdResponse,omitempty"`
+			Fault                           Fault             `json:"fault,omitempty"`
 		} `json:"Body"`
 	} `json:"Envelope"`
 }
@@ -83,6 +84,10 @@ type QrPaymentResponse struct {
 	Transaction       int           `json:"transaction"`
 	Status            string        `json:"status"`
 	Error             Error         `json:"error"`
+}
+
+type PaymentStatusResp struct {
+	Operation OperationInfo `json:"operation"`
 }
 
 type Error struct {
